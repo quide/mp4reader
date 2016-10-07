@@ -4,13 +4,18 @@
  *  (Supports: Linux/OS X/Windows)
  *   
  *  Usage: mp4Reader <file.mp4>
+ *
+ *  NOTES:
+ *		. VS2015 supports C++14
+ *		. g++-4.9 has -std=c++14
+ *		. Xcode 
  *  
  *  TODO: . add unit tests
  *        . test at Linux
  *        . test at MacOS
  *        . unified schema to generate multiplatform projects? (like MPC)
  *		  . Prevent: 
- *				    . system endianess
+ *				    . system endianness
  *					. UTF-8 named files and data
  *					. unsigned char and unsigned int?
  ***********************************/ 
@@ -49,11 +54,15 @@ int main( int argc ,  char* argv[] ){
 	///// TESTING ...
 
 	const int blocks_size{ 4 };
-	unique_ptr<char> memory_block(new char[blocks_size]);
+	unique_ptr<char[]> memory_block(new char[blocks_size]);
 	file.read(memory_block.get(), blocks_size);
 	
-	int block_size = 0;
-	block_size = static_cast<int>( *memory_block );
+	//int block_size = 0;
+	//block_size = static_cast<int>( *memory_block );
+	int block_size = static_cast<int>(	static_cast<unsigned char>(memory_block[0]) << 24 |
+										static_cast<unsigned char>(memory_block[1]) << 16 |
+										static_cast<unsigned char>(memory_block[2]) << 8 |
+										static_cast<unsigned char>(memory_block[3]));
 
 	string block_name;
 
