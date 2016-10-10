@@ -45,6 +45,7 @@ void usage( const string&  app_name ){
 
 int main(int argc, char* argv[]) {
 	string app_name(argv[0]);
+	int ret_code = 0;
 
 	if (argc != 2) {
 		cout << "File not correctly inserted" << ((argc == 1) ? " (lacking)." : ".") << endl;
@@ -52,11 +53,10 @@ int main(int argc, char* argv[]) {
 		return -1;
 	}
 
-	ifstream file;
 	string filename{ argv[1] };
-	file.open(filename, ios::binary | ios::ate);	// open file at the end of it (to determine file size)
+	ifstream file(filename, ios::binary | ios::ate);	// open file at the end of it (to determine file size)
 
-	if( file.is_open() ){ 
+	if( file  &&  file.is_open() ){ 
 		cout << "Successfully loaded file " << filename << endl;
 	}
 	else{
@@ -75,23 +75,44 @@ int main(int argc, char* argv[]) {
 	const int BLOCKS_SIZE{ 4 };
 	char memory_block[BLOCKS_SIZE];
 
+	uint64_t box_address = 0;
+	uint32_t box_size = 0;
+	uint32_t box_type = 0;
+	string box_type_s;
+
+	const int CHUNK_SIZE{ 50 * 1024 * 1024 };
+	char chunk_of_content[CHUNK_SIZE];	// read content in maximum chunks of 50MB (prevents big data at once into RAM)
+
 	while( work_to_do ){
-		uint64_t box_address = file.tellg();
+		box_address = file.tellg();
 
 		if( file.eof()  ||  box_address >= file_size ){
 			cout << "All file was read." << endl;
 			work_to_do = false;
 			break;
 		}
+		
+		if (file.fail()) {
+			cout << u8R"("fail" error occurred.)" << endl;
+			work_to_do = false;
+			ret_code = -1;
+			break;
+		}
+		if (file.bad()) {
+			cout << u8R"("bad" error occurred.)" << endl;
+			work_to_do = false;
+			ret_code = -2;
+			break;
+		}
 
 		file.read(memory_block, BLOCKS_SIZE);
-		uint32_t box_size = BLOCK2INT(memory_block);	// we are supporting boxes with 4,294,967,295 bytes max (32 bit representation)
+		box_size = BLOCK2INT(memory_block);	// we are supporting boxes with 4,294,967,295 bytes max (32 bit representation)
 
 		file.read(memory_block, BLOCKS_SIZE);
 		uint32_t box_type = BLOCK2INT(memory_block);
-		string box_type_s(memory_block);
+		box_type_s = memory_block;
 
-		box new_box(box_address, box_size, box_type);
+		//box new_box(box_address, box_size, box_type);
 		cout << "Found box of type " << box_type_s << " and size " << box_size << endl;
 
 		switch (box_type) {
@@ -99,9 +120,17 @@ int main(int argc, char* argv[]) {
 			case BLOCK2INT("traf"):	// just go to the next sub-box
 				break;
 			case BLOCK2INT("mdat"):
+				cout << "Content of mdat box is: " << box_size << endl;
+				for (uint32_t l = box_size; l > 0; l -= CHUNK_SIZE) {
+					file.read(chunk_of_content, ((l<CHUNK_SIZE)? l : CHUNK_SIZE) );
+					// TODO: check intermediate errors
+					cout << chunk_of_content;
+				}
+				cout << endl;
 				break;
 			default:				// all other box types don't contain sub-boxes
-				// skip their content
+				file.seekg( box_size, ios::cur ); // skip their content
+				// TODO: detect when reading was badly done because of wrong box size info
 				break;
 		}
 	}
@@ -109,5 +138,5 @@ int main(int argc, char* argv[]) {
 	/////////////////////
 	
 	file.close();
-  	return 0;
+  	return ret_code;
 }
