@@ -54,14 +54,19 @@ int main(int argc, char* argv[]) {
 
 	ifstream file;
 	string filename{ argv[1] };
-	file.open(filename, ios::binary);
+	file.open(filename, ios::binary | ios::ate);	// open file at the end of it (to determine file size)
 
-	if (file.is_open()) { cout << "File " << filename << " correctly open." << endl; }
-	else {
-		cout << "File " << filename << " not possible to open." << endl;
+	if( file.is_open() ){ 
+		cout << "Successfully loaded file " << filename << endl;
+	}
+	else{
+		cout << "File " << filename << " not possible to be open." << endl;
 		usage(app_name);
 		return -2;
 	}
+
+	uint64_t file_size = file.tellg(); 	// detect full file size
+	file.seekg(0, std::ios::beg);		// get ready to read from the beginning
 
 	///// TESTING ...
 
@@ -70,18 +75,36 @@ int main(int argc, char* argv[]) {
 	const int BLOCKS_SIZE{ 4 };
 	char memory_block[BLOCKS_SIZE];
 
-	//while( work_to_do ){
+	while( work_to_do ){
 		uint64_t box_address = file.tellg();
 
+		if( file.eof()  ||  box_address >= file_size ){
+			cout << "All file was read." << endl;
+			work_to_do = false;
+			break;
+		}
+
 		file.read(memory_block, BLOCKS_SIZE);
-		uint32_t box_size = BLOCK2INT(memory_block);	// we are supporting boxes with 4,294,967,295 bytes max
+		uint32_t box_size = BLOCK2INT(memory_block);	// we are supporting boxes with 4,294,967,295 bytes max (32 bit representation)
 
 		file.read(memory_block, BLOCKS_SIZE);
 		uint32_t box_type = BLOCK2INT(memory_block);
+		string box_type_s(memory_block);
 
 		box new_box(box_address, box_size, box_type);
-	//}
-	//eof()
+		cout << "Found box of type " << box_type_s << " and size " << box_size << endl;
+
+		switch (box_type) {
+			case BLOCK2INT("moof"):	// these only contain sub-boxes,
+			case BLOCK2INT("traf"):	// just go to the next sub-box
+				break;
+			case BLOCK2INT("mdat"):
+				break;
+			default:				// all other box types don't contain sub-boxes
+				// skip their content
+				break;
+		}
+	}
 
 	/////////////////////
 	
