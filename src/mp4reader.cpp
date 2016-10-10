@@ -24,6 +24,7 @@
 #include <iostream>
 #include <string>
 #include <memory>
+#include <chrono>
 
 using namespace std; 
 
@@ -129,9 +130,8 @@ int main(int argc, char* argv[]) {
 					file.read(chunk_of_content.get(), chunk_size);
 					content.append(chunk_of_content.get(), chunk_size);
 					// TODO: check intermediate errors
-					cout << content;
 				}
-				cout << endl;
+				cout << content << endl;
 				break; }
 			default:				// all other box types don't contain sub-boxes
 				file.seekg( box_size - 2 * BLOCKS_SIZE,  ios::cur ); // skip their content
