@@ -110,7 +110,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\box.cpp" />
     <ClCompile Include="src\mp4reader.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\box.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

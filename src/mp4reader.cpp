@@ -27,57 +27,60 @@
 
 using namespace std; 
 
-#define BOX_TYPE(c1,c2,c3,c4)       \
-   (((static_cast<uint32_t>(c1))<<24) |  \
-    ((static_cast<uint32_t>(c2))<<16) |  \
-    ((static_cast<uint32_t>(c3))<< 8) |  \
-    ((static_cast<uint32_t>(c4))    ))
+#include "box.h"
+
+
+#define BLOCK2INT(c)       \
+   static_cast<uint32_t>(((static_cast<unsigned char>(c[0]))<<24) | \
+						 ((static_cast<unsigned char>(c[1]))<<16) | \
+						 ((static_cast<unsigned char>(c[2]))<< 8) | \
+						 ((static_cast<unsigned char>(c[3]))    )     )
 
 
 void usage( const string&  app_name ){
 	cout << "Usage:" << endl << "\t" << app_name << " <file.mp4>" << endl;
 }
 
-int main( int argc ,  char* argv[] ){
-	string app_name( argv[0] );
 
-	if( argc != 2 ){
-		cout << "File to be openned not correctly inserted" << ( (argc==1)? " (lacking)." : "." ) << endl;
-		usage( app_name );
-		return -1; 
+
+int main(int argc, char* argv[]) {
+	string app_name(argv[0]);
+
+	if (argc != 2) {
+		cout << "File not correctly inserted" << ((argc == 1) ? " (lacking)." : ".") << endl;
+		usage(app_name);
+		return -1;
 	}
 
-	ifstream file;  
+	ifstream file;
 	string filename{ argv[1] };
 	file.open(filename, ios::binary);
-	
-	if( file.is_open() ) { cout << "File " << filename << " correctly open." << endl;  }
-	else{ 
+
+	if (file.is_open()) { cout << "File " << filename << " correctly open." << endl; }
+	else {
 		cout << "File " << filename << " not possible to open." << endl;
-		usage( app_name );
-		return -2; 
+		usage(app_name);
+		return -2;
 	}
-	
+
 	///// TESTING ...
 
+	bool work_to_do = true;
+
 	const int BLOCKS_SIZE{ 4 };
-	union {
-		uint32_t i;
-		char c[BLOCKS_SIZE];
-	} memory_block;
+	char memory_block[BLOCKS_SIZE];
 
-	//unique_ptr<char[]> memory_block(new char[BLOCKS_SIZE]);
-	file.read(memory_block.c, BLOCKS_SIZE);
-	
-	//int block_size = 0;
-	//block_size = static_cast<int>( *memory_block );
-	/*int block_size = static_cast<int>(	static_cast<unsigned char>(memory_block[0]) << 24 |
-										static_cast<unsigned char>(memory_block[1]) << 16 |
-										static_cast<unsigned char>(memory_block[2]) << 8 |
-										static_cast<unsigned char>(memory_block[3]));
-										*/
-	string block_name;
+	//while( work_to_do ){
+		uint64_t box_address = file.tellg();
 
+		file.read(memory_block, BLOCKS_SIZE);
+		uint32_t box_size = BLOCK2INT(memory_block);	// we are supporting boxes with 4,294,967,295 bytes max
+
+		file.read(memory_block, BLOCKS_SIZE);
+		uint32_t box_type = BLOCK2INT(memory_block);
+
+		box new_box(box_address, box_size, box_type);
+	//}
 	//eof()
 
 	/////////////////////
