@@ -27,7 +27,7 @@
 
 using namespace std; 
 
-#include "box.h"
+//#include "box.h"
 
 
 #define BLOCK2INT(c)       \
@@ -78,10 +78,11 @@ int main(int argc, char* argv[]) {
 	uint64_t box_address = 0;
 	uint32_t box_size = 0;
 	uint32_t box_type = 0;
-	string box_type_s;
+//	string box_type_s;
 
 	const int CHUNK_SIZE{ 50 * 1024 * 1024 };
-	char chunk_of_content[CHUNK_SIZE];	// read content in maximum chunks of 50MB (prevents big data at once into RAM)
+	unique_ptr<char[]>  chunk_of_content(new char[CHUNK_SIZE]);	// read content in maximum chunks of 50MB (prevents big data at once into RAM)
+	string content;
 
 	while( work_to_do ){
 		box_address = file.tellg();
@@ -110,7 +111,7 @@ int main(int argc, char* argv[]) {
 
 		file.read(memory_block, BLOCKS_SIZE);
 		uint32_t box_type = BLOCK2INT(memory_block);
-		box_type_s = memory_block;
+		string box_type_s(memory_block, BLOCKS_SIZE);
 
 		//box new_box(box_address, box_size, box_type);
 		cout << "Found box of type " << box_type_s << " and size " << box_size << endl;
@@ -119,17 +120,21 @@ int main(int argc, char* argv[]) {
 			case BLOCK2INT("moof"):	// these only contain sub-boxes,
 			case BLOCK2INT("traf"):	// just go to the next sub-box
 				break;
-			case BLOCK2INT("mdat"):
-				cout << "Content of mdat box is: " << box_size << endl;
-				for (uint32_t l = box_size; l > 0; l -= CHUNK_SIZE) {
-					file.read(chunk_of_content, ((l<CHUNK_SIZE)? l : CHUNK_SIZE) );
+			case BLOCK2INT("mdat"): {
+				cout << "Content of mdat box is: " << endl;
+				uint32_t l = box_size - 2 * BLOCKS_SIZE;
+				uint32_t chunk_size = ((l > CHUNK_SIZE) ? CHUNK_SIZE : l);
+				for (; l > 0; l -= chunk_size) {
+					chunk_size = ((l > CHUNK_SIZE) ? CHUNK_SIZE : l);
+					file.read(chunk_of_content.get(), chunk_size);
+					content.append(chunk_of_content.get(), chunk_size);
 					// TODO: check intermediate errors
-					cout << chunk_of_content;
+					cout << content;
 				}
 				cout << endl;
-				break;
+				break; }
 			default:				// all other box types don't contain sub-boxes
-				file.seekg( box_size, ios::cur ); // skip their content
+				file.seekg( box_size - 2 * BLOCKS_SIZE,  ios::cur ); // skip their content
 				// TODO: detect when reading was badly done because of wrong box size info
 				break;
 		}
