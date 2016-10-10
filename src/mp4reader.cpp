@@ -78,7 +78,6 @@ int main(int argc, char* argv[]) {
 	uint64_t box_address = 0;
 	uint32_t box_size = 0;
 	uint32_t box_type = 0;
-//	string box_type_s;
 
 	const int CHUNK_SIZE{ 50 * 1024 * 1024 };
 	unique_ptr<char[]>  chunk_of_content(new char[CHUNK_SIZE]);	// read content in maximum chunks of 50MB (prevents big data at once into RAM)
@@ -87,7 +86,8 @@ int main(int argc, char* argv[]) {
 	while( work_to_do ){
 		box_address = file.tellg();
 
-		if( file.eof()  ||  box_address >= file_size ){
+		if( file.eof()  ||										// terminate if we are at the end of the file 
+			box_address >= file_size - (2 * BLOCKS_SIZE + 1) ){	// or it lacks less than a min box size for the end of the file
 			cout << "All file was read." << endl;
 			work_to_do = false;
 			break;
@@ -110,7 +110,7 @@ int main(int argc, char* argv[]) {
 		box_size = BLOCK2INT(memory_block);	// we are supporting boxes with 4,294,967,295 bytes max (32 bit representation)
 
 		file.read(memory_block, BLOCKS_SIZE);
-		uint32_t box_type = BLOCK2INT(memory_block);
+		box_type = BLOCK2INT(memory_block);
 		string box_type_s(memory_block, BLOCKS_SIZE);
 
 		//box new_box(box_address, box_size, box_type);
