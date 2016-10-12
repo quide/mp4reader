@@ -88,13 +88,14 @@ void extract_images(const string& content) {
 			if (node) {
 				string filename{ "extracted_image" };
 				int img_counter = 1;
+
+				node = node->first_node("image", R"(http://www.smpte-ra.org/schemas/2052-1/2010/smpte-tt)");
 				while (node) {
-					node = node->first_node("image", R"(http://www.smpte-ra.org/schemas/2052-1/2010/smpte-tt)");
 					if (node) {
 						ostringstream os;
 						os << filename << img_counter << ".png";
-						filename = os.str();
-						ofstream file(filename, ios::binary);
+						string final_filename{ os.str() };
+						ofstream file(final_filename, ios::binary);
 
 						if (file  &&  file.is_open()) {
 							string image{ node->value() };
@@ -108,15 +109,16 @@ void extract_images(const string& content) {
 							//}
 
 							file << image;
-							cout << current_timestamp() << "File " << filename << " created." << endl;
+							cout << current_timestamp() << "File " << final_filename << " created." << endl;
 						}
 						else {
-							cout << current_timestamp() << "File " << filename << " not possible to be created." << endl;
+							cout << current_timestamp() << "File " << final_filename << " not possible to be created." << endl;
 						}
 
 						//file.close(); //no need, it is a RAII
 					}
 					++img_counter;
+					node = node->next_sibling("image");
 				}
 			}
 		}
