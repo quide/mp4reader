@@ -38,6 +38,8 @@
 #include <cctype>
 #include <locale>
 
+#include "base64\base64.h"
+
 using namespace std; 
 
 //#include "box.h"
@@ -69,6 +71,7 @@ string current_timestamp() {
 
 void extract_images(const string& content) {
 	cout << current_timestamp() << "Extracting images from XML." << endl;
+	// Format: https://www.smpte.org/sites/default/files/st2052-1-2010.pdf
 
 	// make a safe-to-modify copy of input_xml
 	vector<char> xml_copy(content.begin(), content.end());
@@ -98,6 +101,11 @@ void extract_images(const string& content) {
 							// clean the data
 							image.erase(image.begin(), find_if(image.begin(), image.end(), not1(ptr_fun<int, int>(std::isspace))));
 							image.erase(image.find_last_not_of(" \n\r\t") + 1);
+
+							//rapidxml::xml_attribute<>* attr = node->first_attribute("encoding");
+							//if (attr->value() == "Base64") {
+								image = base64_decode(image);
+							//}
 
 							file << image;
 							cout << current_timestamp() << "File " << filename << " created." << endl;

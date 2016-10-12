@@ -110,10 +110,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\base64\base64.cpp" />
     <ClCompile Include="src\box.cpp" />
     <ClCompile Include="src\mp4reader.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\base64\base64.h" />
     <ClInclude Include="src\box.h" />
     <ClInclude Include="src\rapidxml-1.13\rapidxml.hpp" />
     <ClInclude Include="src\rapidxml-1.13\rapidxml_iterators.hpp" />
