@@ -7,14 +7,14 @@
  *
  *  NOTES on C++14:
  *		. VS2015 supports C++14
- *		. g++-4.9 has -std=c++14
+ *		. g++ has -std=c++14
  *		. Xcode (use Clang in C++14 mode with the -std=c++14)
  *  
- *  TODO: . add unit tests
- *        . test at Linux
+ *  TODO: . create a controller class and remove logic from main (this also helps for creating unit tests)
+ *        . add unit tests
  *        . test at MacOS
  *        . unified schema to generate multiplatform projects? (like MPC)
- *		  . Prevent: 
+ *		  . Prevent problems related to: 
  *				    . system endianness
  *					. UTF-8 named files and data
  *					. check unsigned char and unsigned int (uint32_t) convertions and portability
@@ -31,6 +31,12 @@
 #include <sstream>
 
 #include "rapidxml-1.13\rapidxml.hpp"
+#include <vector>
+
+#include <algorithm> 
+#include <functional> 
+#include <cctype>
+#include <locale>
 
 using namespace std; 
 
@@ -61,11 +67,52 @@ string current_timestamp() {
 	return ret;
 }
 
-void extract_images(string content) {
-	//string match = u8"</smpte:image>";
+void extract_images(const string& content) {
+	cout << current_timestamp() << "Extracting images from XML." << endl;
+
+	// make a safe-to-modify copy of input_xml
+	vector<char> xml_copy(content.begin(), content.end());
+	xml_copy.push_back('\0');
 	
 	rapidxml::xml_document<> doc;    // character type defaults to char
-	doc.parse<0>( const_cast<char*>(content.c_str()) );    // 0 means default parse flags
+	doc.parse<rapidxml::parse_validate_xmlns /*rapidxml::parse_declaration_node | rapidxml::parse_no_data_nodes*/>( &xml_copy[0] /*const_cast<char*>(content.c_str())*/ );    // 0 means default parse flags
+
+	rapidxml::xml_node<> *node = doc.first_node("tt", R"(http://www.w3.org/ns/ttml)");
+	if (node) {
+		node = node->first_node("head");
+		if (node) {
+			node = node->first_node("metadata");
+			if (node) {
+				string filename{ "extracted_image" };
+				int img_counter = 1;
+				while (node) {
+					node = node->first_node("image", R"(http://www.smpte-ra.org/schemas/2052-1/2010/smpte-tt)");
+					if (node) {
+						ostringstream os;
+						os << filename << img_counter << ".png";
+						filename = os.str();
+						ofstream file(filename, ios::binary);
+
+						if (file  &&  file.is_open()) {
+							string image{ node->value() };
+							// clean the data
+							image.erase(image.begin(), find_if(image.begin(), image.end(), not1(ptr_fun<int, int>(std::isspace))));
+							image.erase(image.find_last_not_of(" \n\r\t") + 1);
+
+							file << image;
+							cout << current_timestamp() << "File " << filename << " created." << endl;
+						}
+						else {
+							cout << current_timestamp() << "File " << filename << " not possible to be created." << endl;
+						}
+
+						//file.close(); //no need, it is a RAII
+					}
+					++img_counter;
+				}
+			}
+		}
+	}
 }
 
 
@@ -154,8 +201,7 @@ int main(int argc, char* argv[]) {
 					file.read(chunk_of_content.get(), chunk_size);
 					string content_chunk(chunk_of_content.get(), chunk_size);
 					cout << content_chunk;
-					extract_images(content_chunk);	// TODO: glue up images if divided by several chunks
-					//content.append(chunk_of_content.get(), chunk_size);	// don't store all in one like this, may add up to 4GB
+					extract_images(content_chunk);	// TODO: glue up images if divided by several chunks; implement XML chunks reading (eg. extract valid sub XMLs to be parsed)
 					// TODO: check intermediate reading file errors
 				}
 				cout << endl;
@@ -168,6 +214,6 @@ int main(int argc, char* argv[]) {
 	}
 
 	
-	file.close();
+	//file.close(); //no need, it is a RAII
   	return ret_code;
 }
