@@ -6,9 +6,9 @@
  *  Usage: mp4Reader <file.mp4>
  *
  *  NOTES on C++14:
- *		. VS2015 supports C++14
- *		. g++ has -std=c++14
- *		. Xcode (use Clang in C++14 mode with the -std=c++14)
+ *		. Windows:  VS2015 supports C++14
+ *		. Linux  :  g++ has -std=c++14
+ *		. MacOS  :  Xcode (use Clang in C++14 mode with the -std=c++14)
  *  
  *  TODO: . create a controller class and remove logic from main (this also helps for creating unit tests)
  *        . add unit tests
@@ -30,7 +30,7 @@
 #include <iomanip>
 #include <sstream>
 
-#include "rapidxml-1.13\rapidxml.hpp"
+#include "rapidxml-1.13/rapidxml.hpp"
 #include <vector>
 
 #include <algorithm> 
@@ -38,7 +38,7 @@
 #include <cctype>
 #include <locale>
 
-#include "base64\base64.h"
+#include "base64/base64.h"
 
 using namespace std; 
 
@@ -93,9 +93,23 @@ void extract_images(const string& content) {
 				while (node) {
 					if (node) {
 						ostringstream os;
+
 						rapidxml::xml_attribute<>* attr = node->first_attribute("imagetype");
-						if( !attr ){	break;	}
-						os << filename << img_counter << "." << attr->value();
+						string image_type{ "png" };	// default
+						if (attr) { image_type = attr->value(); }
+
+						attr = node->first_attribute("xml:id");
+
+						if (attr) {
+							os << attr->value() << "." << image_type;
+						}
+						else {
+							os << filename << img_counter << "." << image_type;
+							++img_counter;
+						}
+
+						// TODO: avoid duplicate names (by XML mistake) (eg: add (counter) to filename when duplicate found)
+
 						string final_filename{ os.str() };
 						ofstream file(final_filename, ios::binary);
 
@@ -105,7 +119,7 @@ void extract_images(const string& content) {
 							image.erase(image.begin(), find_if(image.begin(), image.end(), not1(ptr_fun<int, int>(std::isspace))));
 							image.erase(image.find_last_not_of(" \n\r\t") + 1);
 
-							rapidxml::xml_attribute<>* attr = node->first_attribute("encoding");
+							attr = node->first_attribute("encoding");
 							if( attr  &&  string(attr->value()) == "Base64" ){
 								image = base64_decode(image);
 							}
@@ -117,7 +131,7 @@ void extract_images(const string& content) {
 							cout << current_timestamp() << "File " << final_filename << " not possible to be created." << endl;
 						}
 					}
-					++img_counter;
+					
 					node = node->next_sibling("image");
 				}
 			}
