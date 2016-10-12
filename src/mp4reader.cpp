@@ -93,7 +93,9 @@ void extract_images(const string& content) {
 				while (node) {
 					if (node) {
 						ostringstream os;
-						os << filename << img_counter << ".png";
+						rapidxml::xml_attribute<>* attr = node->first_attribute("imagetype");
+						if( !attr ){	break;	}
+						os << filename << img_counter << "." << attr->value();
 						string final_filename{ os.str() };
 						ofstream file(final_filename, ios::binary);
 
@@ -103,10 +105,10 @@ void extract_images(const string& content) {
 							image.erase(image.begin(), find_if(image.begin(), image.end(), not1(ptr_fun<int, int>(std::isspace))));
 							image.erase(image.find_last_not_of(" \n\r\t") + 1);
 
-							//rapidxml::xml_attribute<>* attr = node->first_attribute("encoding");
-							//if (attr->value() == "Base64") {
+							rapidxml::xml_attribute<>* attr = node->first_attribute("encoding");
+							if( attr  &&  string(attr->value()) == "Base64" ){
 								image = base64_decode(image);
-							//}
+							}
 
 							file << image;
 							cout << current_timestamp() << "File " << final_filename << " created." << endl;
@@ -114,8 +116,6 @@ void extract_images(const string& content) {
 						else {
 							cout << current_timestamp() << "File " << final_filename << " not possible to be created." << endl;
 						}
-
-						//file.close(); //no need, it is a RAII
 					}
 					++img_counter;
 					node = node->next_sibling("image");
@@ -223,7 +223,5 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-	
-	//file.close(); //no need, it is a RAII
   	return ret_code;
 }
