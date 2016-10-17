@@ -7,7 +7,7 @@
  *
  *  NOTES on C++14:
  *		. Windows:  VS2015 supports C++14
- *		. Linux  :  g++ has -std=c++14
+ *		. Linux  :  g++-5 has -std=c++14 (g++-5 instead of g++ in order to support put_time()))
  *		. MacOS  :  Xcode (use Clang in C++14 mode with the -std=c++14)
  *  
  *  TODO: . create a controller class and remove logic from main (this also helps for creating unit tests)
