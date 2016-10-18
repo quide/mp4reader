@@ -7,8 +7,12 @@
  *
  *  NOTES on C++14:
  *		. Windows:  VS2015 supports C++14
- *		. Linux  :  g++-5 has -std=c++14 (g++-5 instead of g++ in order to support put_time()))
- *		. MacOS  :  Xcode (use Clang in C++14 mode with the -std=c++14)
+ *		. Linux  :  g++-5 has -std=c++14 ( use g++-5 instead of g++ in order to support put_time()) )
+ *		. MacOS  :  e.g.: Xcode (use Clang in C++14 mode with the -std=c++14).	 
+ *					In my case I did:
+ *                  	    ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+ *                          brew install gcc --without-multilib
+ *                          make 
  *  
  *  TODO: . create a controller class and remove logic from main (this also helps for creating unit tests)
  *        . add unit tests
